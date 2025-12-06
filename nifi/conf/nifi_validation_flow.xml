@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<template encoding-version="1.3">
+    <description>Pipeline de validation des tweets - Consomme depuis raw-tweets, valide et publie vers tweets-validated</description>
+    <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+    <name>Tweet Validation Flow</name>
+    <snippet>
+        <processGroups>
+            <id>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</id>
+            <parentGroupId>00000000-0000-0000-0000-000000000000</parentGroupId>
+            <position x="0.0" y="0.0"/>
+            <comments></comments>
+            <contents>
+                <connections>
+                    <id>c1a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f2a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <name></name>
+                    <selectedRelationships>success</selectedRelationships>
+                    <source>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f1a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <connections>
+                    <id>c2a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f3a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <name></name>
+                    <selectedRelationships>matched</selectedRelationships>
+                    <source>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f2a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <connections>
+                    <id>c3a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f4a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <name></name>
+                    <selectedRelationships>valid</selectedRelationships>
+                    <source>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f3a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <connections>
+                    <id>c4a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f5a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <name></name>
+                    <selectedRelationships>success</selectedRelationships>
+                    <source>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f4a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <connections>
+                    <id>c5a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f6a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <name></name>
+                    <selectedRelationships>unmatched</selectedRelationships>
+                    <source>
+                        <groupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</groupId>
+                        <id>f3a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <processors>
+                    <id>f1a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <position x="100.0" y="100.0"/>
+                    <bundle>
+                        <artifact>nifi-kafka-2-6-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.23.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <descriptors>
+                            <entry>
+                                <key>bootstrap.servers</key>
+                                <value>
+                                    <name>bootstrap.servers</name>
+                                </value>
+                            </entry>
+                            <entry>
+                                <key>topic</key>
+                                <value>
+                                    <name>topic</name>
+                                </value>
+                            </entry>
+                            <entry>
+                                <key>topic_type</key>
+                                <value>
+                                    <name>topic_type</name>
+                                </value>
+                            </entry>
+                            <entry>
+                                <key>group.id</key>
+                                <value>
+                                    <name>group.id</name>
+                                </value>
+                            </entry>
+                            <entry>
+                                <key>auto.offset.reset</key>
+                                <value>
+                                    <name>auto.offset.reset</name>
+                                </value>
+                            </entry>
+                        </descriptors>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+                                <key>bootstrap.servers</key>
+                                <value>kafka:9092</value>
+                            </entry>
+                            <entry>
+                                <key>topic</key>
+                                <value>raw-tweets</value>
+                            </entry>
+                            <entry>
+                                <key>topic_type</key>
+                                <value>names</value>
+                            </entry>
+                            <entry>
+                                <key>group.id</key>
+                                <value>nifi-validator-group</value>
+                            </entry>
+                            <entry>
+                                <key>auto.offset.reset</key>
+                                <value>latest</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <name>ConsumeKafka - Raw Tweets</name>
+                    <relationships>
+                        <autoTerminate>false</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <style/>
+                    <type>org.apache.nifi.processors.kafka.pubsub.ConsumeKafka_2_6</type>
+                </processors>
+                <processors>
+                    <id>f2a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <position x="400.0" y="100.0"/>
+                    <bundle>
+                        <artifact>nifi-standard-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.23.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <descriptors>
+                            <entry>
+                                <key>Destination</key>
+                                <value>
+                                    <name>Destination</name>
+                                </value>
+                            </entry>
+                        </descriptors>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+                                <key>Destination</key>
+                                <value>flowfile-attribute</value>
+                            </entry>
+                            <entry>
+                                <key>tweet.text</key>
+                                <value>$.text</value>
+                            </entry>
+                            <entry>
+                                <key>tweet.user</key>
+                                <value>$.user</value>
+                            </entry>
+                            <entry>
+                                <key>tweet.timestamp</key>
+                                <value>$.timestamp</value>
+                            </entry>
+                            <entry>
+                                <key>tweet.location</key>
+                                <value>$.location</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <name>EvaluateJsonPath - Extract Fields</name>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>failure</name>
+                    </relationships>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>unmatched</name>
+                    </relationships>
+                    <relationships>
+                        <autoTerminate>false</autoTerminate>
+                        <name>matched</name>
+                    </relationships>
+                    <style/>
+                    <type>org.apache.nifi.processors.standard.EvaluateJsonPath</type>
+                </processors>
+                <processors>
+                    <id>f3a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <position x="700.0" y="100.0"/>
+                    <bundle>
+                        <artifact>nifi-standard-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.23.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <descriptors>
+                            <entry>
+                                <key>Routing Strategy</key>
+                                <value>
+                                    <name>Routing Strategy</name>
+                                </value>
+                            </entry>
+                        </descriptors>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+                                <key>Routing Strategy</key>
+                                <value>Route to Property name</value>
+                            </entry>
+                            <entry>
+                                <key>valid</key>
+                                <value>${tweet.text:isEmpty():not():and(${tweet.user:isEmpty():not()})}</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <name>RouteOnAttribute - Validate</name>
+                    <relationships>
+                        <autoTerminate>false</autoTerminate>
+                        <name>valid</name>
+                    </relationships>
+                    <relationships>
+                        <autoTerminate>false</autoTerminate>
+                        <name>unmatched</name>
+                    </relationships>
+                    <style/>
+                    <type>org.apache.nifi.processors.standard.RouteOnAttribute</type>
+                </processors>
+                <processors>
+                    <id>f4a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <position x="1000.0" y="100.0"/>
+                    <bundle>
+                        <artifact>nifi-update-attribute-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.23.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+                                <key>validated</key>
+                                <value>true</value>
+                            </entry>
+                            <entry>
+                                <key>validation.time</key>
+                                <value>${now():format('yyyy-MM-dd HH:mm:ss')}</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <name>UpdateAttribute - Add Metadata</name>
+                    <relationships>
+                        <autoTerminate>false</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <style/>
+                    <type>org.apache.nifi.processors.attributes.UpdateAttribute</type>
+                </processors>
+                <processors>
+                    <id>f5a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <position x="1300.0" y="100.0"/>
+                    <bundle>
+                        <artifact>nifi-kafka-2-6-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.23.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+                                <key>bootstrap.servers</key>
+                                <value>kafka:9092</value>
+                            </entry>
+                            <entry>
+                                <key>topic</key>
+                                <value>tweets-validated</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <name>PublishKafka - Validated Tweets</name>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>failure</name>
+                    </relationships>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <style/>
+                    <type>org.apache.nifi.processors.kafka.pubsub.PublishKafka_2_6</type>
+                </processors>
+                <processors>
+                    <id>f6a2b3c4-d5e6-47fa-8b9c-0d1e2f3a4b5c</id>
+                    <parentGroupId>a1b2c3d4-e5f6-47ab-8c9d-0e1f2a3b4c5d</parentGroupId>
+                    <position x="1000.0" y="400.0"/>
+                    <bundle>
+                        <artifact>nifi-standard-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.23.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+                                <key>Log Level</key>
+                                <value>warn</value>
+                            </entry>
+                            <entry>
+                                <key>Log Payload</key>
+                                <value>true</value>
+                            </entry>
+                            <entry>
+                                <key>Log prefix</key>
+                                <value>INVALID TWEET:</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <name>LogAttribute - Invalid Tweets</name>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <style/>
+                    <type>org.apache.nifi.processors.standard.LogAttribute</type>
+                </processors>
+            </contents>
+            <name>Tweet Validation Flow</name>
+        </processGroups>
+    </snippet>
+    <timestamp>12/01/2024 12:00:00 UTC</timestamp>
+</template>

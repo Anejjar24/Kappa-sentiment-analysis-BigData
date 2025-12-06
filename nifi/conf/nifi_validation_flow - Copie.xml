@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configuration NiFi pour la validation des tweets -->
+<!-- Importer ce template dans NiFi UI -->
+
+<!-- INSTRUCTIONS D'IMPORT:
+1. Aller dans NiFi UI (http://localhost:8089)
+2. Glisser l'icône "Template" sur le canvas
+3. Cliquer sur "Upload Template"
+4. Sélectionner ce fichier XML
+5. Instancier le template
+-->
+
+<!-- FLOW MANUEL À CRÉER DANS NIFI: -->
+
+<!-- 
+PROCESSEUR 1: ConsumeKafka_2_6
+  - Topic: raw-tweets
+  - Bootstrap Servers: kafka:9092
+  - Group ID: nifi-consumer-group
+  
+PROCESSEUR 2: EvaluateJsonPath
+  - text: $.text
+  - user: $.user
+  - timestamp: $.timestamp
+  - location: $.location
+  
+PROCESSEUR 3: RouteOnAttribute
+  Règles de validation:
+  - valid: ${text:isEmpty():not():and(${user:isEmpty():not()})}
+  - invalid: ${text:isEmpty():or(${user:isEmpty()})}
+  
+PROCESSEUR 4: UpdateAttribute (sur route valid)
+  - validated: true
+  - validation_time: ${now():format('yyyy-MM-dd HH:mm:ss')}
+  
+PROCESSEUR 5: PublishKafka_2_6 (depuis valid)
+  - Topic: tweets-validated
+  - Bootstrap Servers: kafka:9092
+  
+PROCESSEUR 6: LogAttribute (depuis invalid)
+  - Log invalid messages for monitoring
+-->
+
+<!-- Template Structure (représentation textuelle) -->
+<template>
+  <name>Tweet Validation Flow</name>
+  <description>Consumes raw tweets, validates them, and publishes to validated topic</description>
+  
+  <processors>
+    <!-- Consumer -->
+    <processor>
+      <name>ConsumeKafka</name>
+      <type>org.apache.nifi.processors.kafka.pubsub.ConsumeKafka_2_6</type>
+      <properties>
+        <property name="bootstrap.servers">kafka:9092</property>
+        <property name="topic">raw-tweets</property>
+        <property name="group.id">nifi-validator</property>
+        <property name="auto.offset.reset">latest</property>
+      </properties>
+    </processor>
+    
+    <!-- JSON Parser -->
+    <processor>
+      <name>EvaluateJsonPath</name>
+      <type>org.apache.nifi.processors.standard.EvaluateJsonPath</type>
+      <properties>
+        <property name="Destination">flowfile-attribute</property>
+        <property name="text">$.text</property>
+        <property name="user">$.user</property>
+        <property name="timestamp">$.timestamp</property>
+        <property name="location">$.location</property>
+      </properties>
+    </processor>
+    
+    <!-- Validation Router -->
+    <processor>
+      <name>RouteOnAttribute</name>
+      <type>org.apache.nifi.processors.standard.RouteOnAttribute</type>
+      <properties>
+        <property name="valid">${text:isEmpty():not():and(${user:isEmpty():not()})}</property>
+      </properties>
+    </processor>
+    
+    <!-- Add Metadata -->
+    <processor>
+      <name>UpdateAttribute</name>
+      <type>org.apache.nifi.processors.attributes.UpdateAttribute</type>
+      <properties>
+        <property name="validated">true</property>
+        <property name="validation_time">${now()}</property>
+      </properties>
+    </processor>
+    
+    <!-- Publisher -->
+    <processor>
+      <name>PublishKafka</name>
+      <type>org.apache.nifi.processors.kafka.pubsub.PublishKafka_2_6</type>
+      <properties>
+        <property name="bootstrap.servers">kafka:9092</property>
+        <property name="topic">tweets-validated</property>
+      </properties>
+    </processor>
+  </processors>
+</template>

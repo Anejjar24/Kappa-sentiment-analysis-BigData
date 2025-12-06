@@ -1,0 +1,613 @@
+# 🚀 Guide Complet NiFi pour Débutants
+## Pipeline de Validation des Tweets
+
+---
+
+## 📋 Table des Matières
+1. [Accès à NiFi](#1-accès-à-nifi)
+2. [Interface NiFi](#2-comprendre-linterface)
+3. [Création du Flow](#3-création-du-flow)
+4. [Configuration des Processeurs](#4-configuration-détaillée)
+5. [Connexions](#5-créer-les-connexions)
+6. [Démarrage](#6-démarrer-le-flow)
+7. [Surveillance](#7-surveiller-le-flow)
+
+---
+
+## 1. Accès à NiFi
+
+### Étape 1.1 : Démarrer Docker
+```bash
+docker-compose up -d
+```
+
+### Étape 1.2 : Ouvrir NiFi
+1. Ouvrez votre navigateur
+2. Allez sur : `http://localhost:8089/nifi`
+3. Attendez 1-2 minutes que NiFi démarre
+
+### Étape 1.3 : Se Connecter
+- **Username** : `admin`
+- **Password** : `adminadminadmin`
+- Cliquez sur **Log In**
+
+---
+
+## 2. Comprendre l'Interface
+
+### Éléments de l'Interface
+```
+┌─────────────────────────────────────────────┐
+│  [≡] Menu    [○] Operate  [⚙] Settings     │  ← Barre supérieure
+├─────────────────────────────────────────────┤
+│  📋 ▶ ⏸ ⏹ 🔧 📊                            │  ← Barre d'outils
+├─────────────────────────────────────────────┤
+│                                              │
+│                                              │
+│            CANVAS (Zone de Travail)          │  ← Glissez les processeurs ici
+│                                              │
+│                                              │
+└─────────────────────────────────────────────┘
+```
+
+### Barre d'Outils (de gauche à droite)
+- **📋 Processor** : Ajouter un processeur
+- **▶ Input Port** : Port d'entrée
+- **⏸ Output Port** : Port de sortie
+- **🔧 Process Group** : Groupe de processeurs
+- **📊 Funnel** : Entonnoir
+- **Template** : Modèle
+- **Label** : Étiquette
+
+---
+
+## 3. Création du Flow
+
+### Vue d'Ensemble du Flow
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│ ConsumeKafka │───▶│EvaluateJson  │───▶│RouteOn       │
+│ (raw-tweets) │    │Path          │    │Attribute     │
+└──────────────┘    └──────────────┘    └──────┬───────┘
+                                               │
+                              ┌────────────────┼────────────────┐
+                              ▼                                 ▼
+                     ┌────────────────┐              ┌─────────────────┐
+                     │UpdateAttribute │              │LogAttribute     │
+                     └────────┬───────┘              │(Invalid Tweets) │
+                              │                      └─────────────────┘
+                              ▼
+                     ┌────────────────┐
+                     │ PublishKafka   │
+                     │(tweets-valid.) │
+                     └────────────────┘
+```
+
+---
+
+## 4. Configuration Détaillée
+
+### PROCESSEUR 1 : ConsumeKafka_2_6
+
+#### Étape 1 : Ajouter le Processeur
+1. Dans la barre d'outils, cliquez sur l'icône **Processor** (📋)
+2. Glissez-la sur le canvas (zone blanche)
+3. Une fenêtre "Add Processor" s'ouvre
+4. Dans la barre de recherche, tapez : `ConsumeKafka`
+5. Sélectionnez : **ConsumeKafka_2_6**
+6. Cliquez sur **ADD**
+
+#### Étape 2 : Configurer le Processeur
+1. **Double-cliquez** sur le processeur (ou clic droit → Configure)
+2. Allez dans l'onglet **SETTINGS**
+   - **Name** : `ConsumeKafka - Raw Tweets`
+   
+3. Allez dans l'onglet **PROPERTIES**
+   - Faites défiler et trouvez ces propriétés :
+
+| Propriété | Valeur | Comment trouver |
+|-----------|--------|-----------------|
+| **Kafka Brokers** | `kafka:9092` | Cherchez "Kafka Brokers" dans la liste |
+| **Topic Name(s)** | `raw-tweets` | Cherchez "Topic Name" |
+| **Topic Name Format** | `names` | Menu déroulant - sélectionnez "names" |
+| **Group ID** | `nifi-validator-group` | Cherchez "Group ID" |
+| **Offset Reset** | `latest` | Menu déroulant - sélectionnez "latest" |
+
+4. Cliquez sur **APPLY**
+
+---
+
+### PROCESSEUR 2 : EvaluateJsonPath
+
+#### Étape 1 : Ajouter le Processeur
+1. Cliquez sur **Processor** (📋) dans la barre d'outils
+2. Glissez sur le canvas (à droite du premier processeur)
+3. Tapez : `EvaluateJsonPath`
+4. Sélectionnez : **EvaluateJsonPath**
+5. Cliquez sur **ADD**
+
+#### Étape 2 : Configurer
+1. **Double-cliquez** sur le processeur
+2. Onglet **SETTINGS** :
+   - **Name** : `EvaluateJsonPath - Extract Fields`
+   - **Automatically Terminate Relationships** :
+     - ☑️ Cochez **failure**
+     - ☑️ Cochez **unmatched**
+
+3. Onglet **PROPERTIES** :
+
+| Propriété | Valeur | Explication |
+|-----------|--------|-------------|
+| **Destination** | `flowfile-attribute` | Menu déroulant |
+| **Return Type** | `auto-detect` | Menu déroulant |
+| **Path Not Found Behavior** | `ignore` | Menu déroulant |
+
+4. **Ajouter des propriétés personnalisées** (IMPORTANT !) :
+   - En haut à droite des propriétés, cliquez sur **+** (bouton plus)
+   - Ajoutez ces 4 propriétés UNE PAR UNE :
+
+   **Propriété 1 :**
+   - Property Name : `tweet.text`
+   - Value : `$.text`
+   - Cliquez **OK**
+
+   **Propriété 2 :**
+   - Property Name : `tweet.user`
+   - Value : `$.user`
+   - Cliquez **OK**
+
+   **Propriété 3 :**
+   - Property Name : `tweet.timestamp`
+   - Value : `$.timestamp`
+   - Cliquez **OK**
+
+   **Propriété 4 :**
+   - Property Name : `tweet.location`
+   - Value : `$.location`
+   - Cliquez **OK**
+
+5. Cliquez sur **APPLY**
+
+---
+
+### PROCESSEUR 3 : RouteOnAttribute
+
+#### Étape 1 : Ajouter le Processeur
+1. Ajoutez un nouveau **Processor** (📋)
+2. Tapez : `RouteOnAttribute`
+3. Sélectionnez : **RouteOnAttribute**
+4. Cliquez sur **ADD**
+
+#### Étape 2 : Configurer
+1. **Double-cliquez** sur le processeur
+2. Onglet **SETTINGS** :
+   - **Name** : `RouteOnAttribute - Validate`
+
+3. Onglet **PROPERTIES** :
+
+| Propriété | Valeur |
+|-----------|--------|
+| **Routing Strategy** | `Route to Property name` |
+
+4. **Ajouter une règle de validation** :
+   - Cliquez sur **+** (en haut à droite)
+   - Property Name : `valid`
+   - Value : `${tweet.text:isEmpty():not():and(${tweet.user:isEmpty():not()})}`
+   - Cliquez **OK**
+
+   > 💡 **Explication** : Cette expression vérifie que `tweet.text` ET `tweet.user` ne sont PAS vides
+
+5. Cliquez sur **APPLY**
+
+---
+
+### PROCESSEUR 4 : UpdateAttribute
+
+#### Étape 1 : Ajouter le Processeur
+1. Ajoutez un nouveau **Processor** (📋)
+2. Tapez : `UpdateAttribute`
+3. Sélectionnez : **UpdateAttribute**
+4. Cliquez sur **ADD**
+
+#### Étape 2 : Configurer
+1. **Double-cliquez** sur le processeur
+2. Onglet **SETTINGS** :
+   - **Name** : `UpdateAttribute - Add Metadata`
+
+3. Onglet **PROPERTIES** :
+   - Cliquez sur **+** pour ajouter 2 propriétés :
+
+   **Propriété 1 :**
+   - Property Name : `validated`
+   - Value : `true`
+   - Cliquez **OK**
+
+   **Propriété 2 :**
+   - Property Name : `validation.time`
+   - Value : `${now():format('yyyy-MM-dd HH:mm:ss')}`
+   - Cliquez **OK**
+
+4. Cliquez sur **APPLY**
+
+---
+
+### PROCESSEUR 5 : PublishKafka_2_6
+
+#### Étape 1 : Ajouter le Processeur
+1. Ajoutez un nouveau **Processor** (📋)
+2. Tapez : `PublishKafka`
+3. Sélectionnez : **PublishKafka_2_6**
+4. Cliquez sur **ADD**
+
+#### Étape 2 : Configurer
+1. **Double-cliquez** sur le processeur
+2. Onglet **SETTINGS** :
+   - **Name** : `PublishKafka - Validated Tweets`
+   - **Automatically Terminate Relationships** :
+     - ☑️ Cochez **success**
+     - ☑️ Cochez **failure**
+
+3. Onglet **PROPERTIES** :
+
+| Propriété | Valeur |
+|-----------|--------|
+| **Kafka Brokers** | `kafka:9092` |
+| **Topic Name** | `tweets-validated` |
+| **Delivery Guarantee** | `Best Effort` |
+
+4. Cliquez sur **APPLY**
+
+---
+
+### PROCESSEUR 6 : LogAttribute
+
+#### Étape 1 : Ajouter le Processeur
+1. Ajoutez un nouveau **Processor** (📋)
+2. Tapez : `LogAttribute`
+3. Sélectionnez : **LogAttribute**
+4. Cliquez sur **ADD**
+5. Placez-le en bas, sous RouteOnAttribute
+
+#### Étape 2 : Configurer
+1. **Double-cliquez** sur le processeur
+2. Onglet **SETTINGS** :
+   - **Name** : `LogAttribute - Invalid Tweets`
+   - **Automatically Terminate Relationships** :
+     - ☑️ Cochez **success**
+
+3. Onglet **PROPERTIES** :
+
+| Propriété | Valeur |
+|-----------|--------|
+| **Log Level** | `warn` |
+| **Log Payload** | `true` |
+| **Log prefix** | `INVALID TWEET:` |
+
+4. Cliquez sur **APPLY**
+
+---
+
+## 5. Créer les Connexions
+
+### Qu'est-ce qu'une Connexion ?
+Les connexions relient les processeurs entre eux pour faire circuler les données.
+
+### Comment Créer une Connexion
+
+#### Connexion 1 : ConsumeKafka → EvaluateJsonPath
+1. **Survolez** le processeur **ConsumeKafka**
+2. Une **flèche** apparaît au centre du processeur
+3. **Cliquez et maintenez** sur cette flèche
+4. **Glissez** jusqu'au processeur **EvaluateJsonPath**
+5. **Relâchez**
+6. Une fenêtre "Create Connection" s'ouvre
+7. Dans **For Relationships** :
+   - ☑️ Cochez **success**
+8. Cliquez sur **ADD**
+
+#### Connexion 2 : EvaluateJsonPath → RouteOnAttribute
+1. Survolez **EvaluateJsonPath**
+2. Cliquez et glissez la flèche vers **RouteOnAttribute**
+3. Dans **For Relationships** :
+   - ☑️ Cochez **matched**
+4. Cliquez sur **ADD**
+
+#### Connexion 3 : RouteOnAttribute → UpdateAttribute
+1. Survolez **RouteOnAttribute**
+2. Cliquez et glissez vers **UpdateAttribute**
+3. Dans **For Relationships** :
+   - ☑️ Cochez **valid**
+4. Cliquez sur **ADD**
+
+#### Connexion 4 : UpdateAttribute → PublishKafka
+1. Survolez **UpdateAttribute**
+2. Cliquez et glissez vers **PublishKafka**
+3. Dans **For Relationships** :
+   - ☑️ Cochez **success**
+4. Cliquez sur **ADD**
+
+#### Connexion 5 : RouteOnAttribute → LogAttribute
+1. Survolez **RouteOnAttribute**
+2. Cliquez et glissez vers **LogAttribute** (en bas)
+3. Dans **For Relationships** :
+   - ☑️ Cochez **unmatched**
+4. Cliquez sur **ADD**
+
+---
+
+## 6. Démarrer le Flow
+
+### Méthode 1 : Démarrer Tous les Processeurs
+
+#### Étape 1 : Sélectionner Tout
+1. Cliquez n'importe où sur le canvas (zone blanche)
+2. Appuyez sur **Ctrl+A** (Windows/Linux) ou **Cmd+A** (Mac)
+3. Tous les processeurs sont maintenant sélectionnés (contour bleu)
+
+#### Étape 2 : Démarrer
+1. **Clic droit** sur n'importe quel processeur sélectionné
+2. Dans le menu, sélectionnez **Start**
+3. Tous les processeurs démarrent ! ✅
+
+### Méthode 2 : Démarrer Individuellement
+1. **Clic droit** sur un processeur
+2. Sélectionnez **Start**
+3. Répétez pour chaque processeur
+
+### Comment Savoir si ça Marche ?
+- **Icône verte** ▶ = Processeur en cours d'exécution
+- **Icône rouge** ⏹ = Processeur arrêté
+- **Chiffres sur les connexions** = Nombre de FlowFiles en attente
+
+---
+
+## 7. Surveiller le Flow
+
+### Voir les Statistiques
+
+#### Sur un Processeur
+1. **Clic droit** sur n'importe quel processeur
+2. Sélectionnez **View status history**
+3. Vous verrez :
+   - Nombre de FlowFiles traités
+   - Bytes lus/écrits
+   - Temps de traitement
+
+#### Sur une Connexion
+1. **Clic droit** sur une connexion (flèche)
+2. Sélectionnez **List queue**
+3. Vous verrez les FlowFiles en attente
+
+### Voir les Logs
+
+#### Logs d'un Processeur
+1. **Clic droit** sur un processeur
+2. Sélectionnez **View Data Provenance**
+3. Vous verrez l'historique des données
+
+#### Logs NiFi Généraux
+```bash
+# Dans votre terminal
+docker logs nifi
+```
+
+### Vérifier les Tweets Invalides
+Les tweets invalides sont loggés par **LogAttribute** :
+```bash
+docker logs nifi | grep "INVALID TWEET"
+```
+
+---
+
+## 8. Arrêter le Flow
+
+### Arrêter Tous les Processeurs
+1. **Ctrl+A** pour tout sélectionner
+2. **Clic droit** → **Stop**
+3. Attendez que tous les processeurs s'arrêtent (icône rouge ⏹)
+
+---
+
+## 9. Dépannage
+
+### Problème : Processeur en Erreur (⚠️)
+1. **Clic droit** sur le processeur
+2. Sélectionnez **View configuration**
+3. Regardez l'onglet **Settings** → **Bulletin** pour voir l'erreur
+
+### Problème : Pas de Données
+1. Vérifiez que Kafka fonctionne :
+   ```bash
+   docker ps | grep kafka
+   ```
+2. Vérifiez que le topic existe :
+   ```bash
+   docker exec -it kafka kafka-topics --list --bootstrap-server localhost:9092
+   ```
+
+### Problème : Connexion Invalide (⚠️ triangle orange)
+1. **Clic droit** sur la connexion
+2. Vérifiez les relationships sélectionnées
+3. Assurez-vous que la destination peut recevoir ces relationships
+
+---
+
+## 10. Bonnes Pratiques
+
+### Organiser le Canvas
+- Alignez les processeurs horizontalement
+- Espacez-les de 300-400 pixels
+- Utilisez des **Labels** pour documenter
+
+### Nommer les Processeurs
+- Utilisez des noms descriptifs
+- Format : `Action - Description`
+- Exemple : `ConsumeKafka - Raw Tweets`
+
+### Terminer les Relationships
+- Toujours terminer les relationships inutilisées
+- Cochez "Auto Terminate Relationships" dans Settings
+- Évite les avertissements ⚠️
+
+---
+
+## 11. Commandes Utiles
+
+### Sauvegarder le Flow
+1. **Clic droit** sur le canvas (zone vide)
+2. **Create template**
+3. Donnez un nom : `Tweet Validation Flow`
+4. Cliquez **Create**
+
+### Exporter le Template
+1. Menu hamburger ☰ (en haut à droite)
+2. **Templates**
+3. Trouvez votre template
+4. Cliquez sur l'icône **Download** 💾
+
+### Importer un Template
+1. Menu hamburger ☰
+2. **Templates** → **Upload template**
+3. Sélectionnez le fichier XML
+4. Glissez l'icône **Template** sur le canvas pour l'utiliser
+
+---
+
+## 12. Résumé des Configurations
+
+### Récapitulatif Complet
+
+```
+PROCESSEUR 1: ConsumeKafka_2_6
+├── Kafka Brokers: kafka:9092
+├── Topic Name(s): raw-tweets
+├── Topic Name Format: names
+├── Group ID: nifi-validator-group
+└── Offset Reset: latest
+
+PROCESSEUR 2: EvaluateJsonPath
+├── Destination: flowfile-attribute
+├── tweet.text: $.text
+├── tweet.user: $.user
+├── tweet.timestamp: $.timestamp
+└── tweet.location: $.location
+
+PROCESSEUR 3: RouteOnAttribute
+├── Routing Strategy: Route to Property name
+└── valid: ${tweet.text:isEmpty():not():and(${tweet.user:isEmpty():not()})}
+
+PROCESSEUR 4: UpdateAttribute
+├── validated: true
+└── validation.time: ${now():format('yyyy-MM-dd HH:mm:ss')}
+
+PROCESSEUR 5: PublishKafka_2_6
+├── Kafka Brokers: kafka:9092
+├── Topic Name: tweets-validated
+└── Delivery Guarantee: Best Effort
+
+PROCESSEUR 6: LogAttribute
+├── Log Level: warn
+├── Log Payload: true
+└── Log prefix: INVALID TWEET:
+```
+
+---
+
+## 🎉 Félicitations !
+
+Vous avez créé votre premier flow NiFi de validation de tweets !
+
+### Prochaines Étapes
+- Testez en envoyant des tweets à Kafka
+- Surveillez les statistiques
+- Explorez d'autres processeurs NiFi
+- Créez des flows plus complexes
+
+### Ressources
+- [Documentation NiFi](https://nifi.apache.org/docs.html)
+- [Expression Language Guide](https://nifi.apache.org/docs/nifi-docs/html/expression-language-guide.html)
+- [Processeurs NiFi](https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi/nifi-standard-nar/1.23.2/)
+
+---
+
+**Besoin d'aide ?** Vérifiez les logs avec `docker logs nifi` !
+
+
+
+✅ 1. Erreurs dans PublishKafka_2_6
+
+Tu as trois erreurs :
+
+🔴 ERREUR 1 : Delivery Guarantee est invalide
+
+Message :
+
+'Delivery Guarantee' is invalid because In order to use Transactions, the Delivery
+Guarantee must be "Guarantee Replicated Delivery."
+
+Cela signifie que :
+
+Use Transactions = true
+
+Mais Delivery Guarantee = Best Effort
+
+👉 Cette configuration est interdite.
+
+✅ Solution
+
+Ouvre PublishKafka_2_6 → PROPERTIES :
+
+➡️ Mets :
+
+Delivery Guarantee : Guarantee Replicated Delivery
+OU
+
+Use Transactions : false
+
+👉 Je te conseille de mettre :
+Delivery Guarantee = Best Effort
+Use Transactions = false
+
+Parce que tu n'as pas besoin des transactions.
+
+🔴 ERREUR 2 : Relationship success n'est pas connecté et pas auto-terminé
+
+Message :
+
+'Relationship success' is invalid because Relationship 'success' is not connected to any component and is not auto-terminated
+
+Cela signifie que tu n’as créé aucune connexion à partir de PublishKafka.
+
+Même si tu coches auto terminate, tu dois le faire dans Settings, pas dans la connexion.
+
+✅ Solution
+
+Ouvre PublishKafka → Settings :
+
+✔️ Coche :
+
+Automatically terminate relationship → success
+
+Automatically terminate relationship → failure
+
+Ensuite clique Apply.
+
+🚨 2. Erreur dans LogAttribute
+
+Message :
+
+'Relationship success' is invalid because Relationship 'success' is not connected to any component and is not auto-terminated
+
+C’est la même erreur : tu n'as aucune connexion qui part de LogAttribute.
+
+Comme ce processeur est juste pour log, il ne doit rien envoyer ailleurs.
+
+✅ Solution
+
+Ouvre LogAttribute → Settings :
+
+✔️ Coche :
+
+Automatically terminate relationship → success
+
+Clique Apply.
