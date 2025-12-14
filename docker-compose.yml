@@ -62,7 +62,9 @@ services:
 
   # Spark Master
   spark-master:
-    image: apache/spark:3.5.0
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
     container_name: spark-master
     command: >
       bash -c "/opt/spark/sbin/start-master.sh &&
@@ -74,9 +76,12 @@ services:
       - kappa-network
     volumes:
       - ./spark/app:/opt/spark-apps
+      - ./models:/opt/spark/work-dir/models
 
   spark-worker:
-    image: apache/spark:3.5.0
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
     container_name: spark-worker
     depends_on:
       - spark-master
@@ -87,6 +92,7 @@ services:
       - kappa-network
     volumes:
       - ./spark/app:/opt/spark-apps
+      - ./models:/opt/spark/work-dir/models
 
   # ElasticSearch
   elasticsearch:
