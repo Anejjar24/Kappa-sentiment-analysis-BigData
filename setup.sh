@@ -28,7 +28,48 @@ docker exec kafka kafka-topics --create \
 echo "Topics Kafka créés:"
 docker exec kafka kafka-topics --list --bootstrap-server localhost:9092
 
+# Créer l'index ElasticSearch
+echo "Configuration ElasticSearch..."
+sleep 10
 
+curl -X PUT "http://localhost:9200/sentiment-analysis" -H 'Content-Type: application/json' -d'
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "text": { "type": "text" },
+      "user": { "type": "keyword" },
+      "timestamp": { "type": "date" },
+      "location": { "type": "keyword" },
+      "sentiment": { "type": "float" },
+      "sentiment_label": { "type": "keyword" },
+      "confidence": { "type": "float" },
+      "processed_time": { "type": "date" }
+    }
+  }
+}
+'
+
+echo ""
+echo "======================================"
+echo "Configuration terminée!"
+echo "======================================"
+echo ""
+echo "Accès aux interfaces:"
+echo "- NiFi: http://localhost:8080 (admin/adminadminadmin)"
+echo "- Spark Master: http://localhost:8081"
+echo "- Kibana: http://localhost:5601"
+echo "- ElasticSearch: http://localhost:9200"
+echo ""
+echo "Étapes suivantes:"
+echo "1. Configurer le flow dans NiFi"
+echo "2. Lancer le producteur: python3 twitter_producer.py"
+echo "3. Soumettre l'application Spark"
+echo "4. Visualiser dans Kibana"
+echo ""
 
 echo ""
 echo "======================================"

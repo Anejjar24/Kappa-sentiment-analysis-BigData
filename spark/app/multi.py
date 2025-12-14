@@ -4,14 +4,13 @@ from pyspark.ml.feature import Tokenizer, StopWordsRemover, CountVectorizer, IDF
 from pyspark.ml.classification import (
     LogisticRegression, 
     RandomForestClassifier,
-    LinearSVC,
     NaiveBayes,
-    DecisionTreeClassifier,
-    GBTClassifier
+    DecisionTreeClassifier
 )
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.sql.functions import col, lower, regexp_replace
 import time
+import json
 
 # Créer la session Spark
 spark = SparkSession.builder \
@@ -76,32 +75,23 @@ print("-" * 70)
 
 # Dictionnaire des modèles à tester
 models = {
-    "Logistic Regression": LogisticRegression(
+    "Logistic_Regression": LogisticRegression(
         maxIter=100,
         regParam=0.01,
         elasticNetParam=0.8,
         family="multinomial"
     ),
-    "Random Forest": RandomForestClassifier(
+    "Random_Forest": RandomForestClassifier(
         numTrees=100,
         maxDepth=10,
         seed=42
     ),
-    "Linear SVM": LinearSVC(
-        maxIter=100,
-        regParam=0.01
-    ),
-    "Naive Bayes": NaiveBayes(
+    "Naive_Bayes": NaiveBayes(
         smoothing=1.0,
         modelType="multinomial"
     ),
-    "Decision Tree": DecisionTreeClassifier(
+    "Decision_Tree": DecisionTreeClassifier(
         maxDepth=10,
-        seed=42
-    ),
-    "Gradient Boosted Trees": GBTClassifier(
-        maxIter=100,
-        maxDepth=5,
         seed=42
     )
 }
@@ -137,7 +127,7 @@ evaluator_recall = MulticlassClassificationEvaluator(
 # Entraîner et évaluer chaque modèle
 for model_name, classifier in models.items():
     print(f"\n{'='*70}")
-    print(f"MODÈLE: {model_name}")
+    print(f"MODÈLE: {model_name.replace('_', ' ')}")
     print(f"{'='*70}")
     
     try:
@@ -169,7 +159,7 @@ for model_name, classifier in models.items():
         recall = evaluator_recall.evaluate(predictions)
         
         # Afficher les résultats
-        print(f"\n📊 RÉSULTATS POUR {model_name}:")
+        print(f"\n📊 RÉSULTATS POUR {model_name.replace('_', ' ')}:")
         print(f"  • Accuracy  : {accuracy:.4f} ({accuracy*100:.2f}%)")
         print(f"  • F1-Score  : {f1:.4f}")
         print(f"  • Precision : {precision:.4f}")
@@ -194,6 +184,15 @@ for model_name, classifier in models.items():
             "training_time": training_time
         })
         
+        # SAUVEGARDER LE MODÈLE
+        model_path = f"./models/{model_name}_model"
+        print(f"\n💾 Sauvegarde du modèle {model_name}...")
+        try:
+            model.write().overwrite().save(model_path)
+            print(f"✓ Modèle sauvegardé dans: {model_path}")
+        except Exception as save_error:
+            print(f"⚠ Erreur lors de la sauvegarde: {str(save_error)}")
+        
     except Exception as e:
         print(f"❌ Erreur lors de l'entraînement de {model_name}: {str(e)}")
         results.append({
@@ -213,7 +212,7 @@ print("="*70)
 
 # Créer un DataFrame des résultats
 results_data = [(
-    r["model"],
+    r["model"].replace("_", " "),
     r["accuracy"],
     r["f1_score"],
     r["precision"],
@@ -221,35 +220,46 @@ results_data = [(
     r["training_time"]
 ) for r in results if "error" not in r]
 
-results_df = spark.createDataFrame(
-    results_data,
-    ["Model", "Accuracy", "F1_Score", "Precision", "Recall", "Training_Time"]
-)
+if results_data:
+    results_df = spark.createDataFrame(
+        results_data,
+        ["Model", "Accuracy", "F1_Score", "Precision", "Recall", "Training_Time"]
+    )
+    
+    print("\nClassement par Accuracy:")
+    results_df.orderBy(col("Accuracy").desc()).show(truncate=False)
+    
+    print("\nClassement par F1-Score:")
+    results_df.orderBy(col("F1_Score").desc()).show(truncate=False)
+    
+    # Trouver le meilleur modèle
+    best_model = max(results, key=lambda x: x.get("accuracy", 0))
+    print(f"\n🏆 MEILLEUR MODÈLE: {best_model['model'].replace('_', ' ')}")
+    print(f"   Accuracy: {best_model['accuracy']:.4f} ({best_model['accuracy']*100:.2f}%)")
+    print(f"   F1-Score: {best_model['f1_score']:.4f}")
 
-print("\nClassement par Accuracy:")
-results_df.orderBy(col("Accuracy").desc()).show(truncate=False)
-
-print("\nClassement par F1-Score:")
-results_df.orderBy(col("F1_Score").desc()).show(truncate=False)
-
-# Trouver le meilleur modèle
-best_model = max(results, key=lambda x: x.get("accuracy", 0))
-print(f"\n🏆 MEILLEUR MODÈLE: {best_model['model']}")
-print(f"   Accuracy: {best_model['accuracy']:.4f} ({best_model['accuracy']*100:.2f}%)")
-print(f"   F1-Score: {best_model['f1_score']:.4f}")
-
-# 7. SAUVEGARDER LES RÉSULTATS
+# 7. SAUVEGARDER LES RÉSULTATS DE COMPARAISON
 print("\n" + "="*70)
-print("Sauvegarde des résultats...")
+print("Sauvegarde des résultats de comparaison...")
 
-import json
-with open("./models/comparison_results.json", "w") as f:
-    json.dump(results, f, indent=2)
+try:
+    with open("./models/comparison_results.json", "w") as f:
+        json.dump(results, f, indent=2)
+    print("✓ Résultats sauvegardés dans: ./models/comparison_results.json")
+except Exception as json_error:
+    print(f"⚠ Erreur lors de la sauvegarde JSON: {str(json_error)}")
 
-print("✓ Résultats sauvegardés dans: ./models/comparison_results.json")
+# Résumé des modèles sauvegardés
+print("\n" + "="*70)
+print("MODÈLES SAUVEGARDÉS:")
+print("="*70)
+for model_name in models.keys():
+    print(f"  ✓ ./models/{model_name}_model/")
 
 print("\n" + "="*70)
 print("COMPARAISON TERMINÉE!")
 print("="*70)
+print(f"\nNombre total de modèles entraînés: {len([r for r in results if 'error' not in r])}")
+print(f"Nombre de modèles avec erreurs: {len([r for r in results if 'error' in r])}")
 
 spark.stop()
