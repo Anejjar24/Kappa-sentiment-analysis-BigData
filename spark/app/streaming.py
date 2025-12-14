@@ -1,283 +1,162 @@
 from pyspark.sql import SparkSession
 from pyspark.ml import PipelineModel
 from pyspark.sql.functions import (
-    from_json, col, udf, struct, to_json, 
-    current_timestamp, when, lower, regexp_replace
+    from_json, col, struct, to_json,
+    current_timestamp, lower, regexp_replace, expr
 )
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType
+from pyspark.sql.types import StructType, StructField, StringType
 import json
 
-# Créer la session Spark avec les packages nécessaires
+# =========================
+# Spark Session
+# =========================
 spark = SparkSession.builder \
     .appName("YouTubeSentimentStreaming") \
-    .config("spark.jars.packages", 
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,"
-            "org.elasticsearch:elasticsearch-spark-30_2.12:8.11.0") \
     .config("spark.es.nodes", "elasticsearch") \
     .config("spark.es.port", "9200") \
-    .config("spark.es.nodes.wan.only", "true") \
+    .config("spark.es.nodes.wan.only", "false") \
     .config("spark.streaming.stopGracefullyOnShutdown", "true") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
 
 print("=" * 70)
-print("STREAMING SENTIMENT ANALYSIS - YOUTUBE COMMENTS")
+print("STREAMING SENTIMENT ANALYSIS - NAIVE BAYES")
 print("=" * 70)
 
-# 1. CHARGER LE MEILLEUR MODÈLE
-print("\n[1/5] Chargement du modèle ML...")
+# =========================
+# 1. Charger Naive Bayes
+# =========================
+model_path = "./models/Naive_Bayes_model"
+model = PipelineModel.load(model_path)
+model_name = "Naive_Bayes_model"
 
-# Essayer de charger le meilleur modèle (changez selon vos résultats)
-MODEL_PATHS = [
-   # "./models/Logistic_Regression_model",
-   # "./models/Random_Forest_model",
-    "./models/Naive_Bayes_model"
-    #,
-   # "./models/Decision_Tree_model"
-]
-
-model = None
-model_name = None
-
-for model_path in MODEL_PATHS:
-    try:
-        model = PipelineModel.load(model_path)
-        model_name = model_path.split("/")[-1]
-        print(f"✓ Modèle chargé: {model_name}")
+# CORRECTION : Extraire les labels depuis StringIndexerModel
+# Le pipeline contient : [CountVectorizer, IDF, StringIndexer, NaiveBayes]
+# Les labels sont dans le StringIndexer (3ème étape, index 2)
+string_indexer = None
+for stage in model.stages:
+    if hasattr(stage, 'labels'):  # Trouver le StringIndexerModel
+        string_indexer = stage
         break
-    except Exception as e:
-        continue
 
-if model is None:
-    print("❌ Aucun modèle trouvé! Assurez-vous d'avoir entraîné les modèles.")
-    spark.stop()
-    exit(1)
+if string_indexer is None:
+    # Fallback : définir manuellement les labels
+    print("⚠ StringIndexer non trouvé, utilisation des labels par défaut")
+    labels = ["negative", "neutral", "positive"]
+else:
+    labels = string_indexer.labels
 
-# Charger les métadonnées si disponibles
-try:
-    with open("./models/comparison_results.json", "r") as f:
-        results = json.load(f)
-        for r in results:
-            if model_name and model_name.replace("_model", "") in r.get("model", ""):
-                print(f"   - Accuracy: {r.get('accuracy', 0):.4f}")
-                print(f"   - F1-Score: {r.get('f1_score', 0):.4f}")
-                break
-except:
-    print("   (Métadonnées non disponibles)")
+print("✓ Modèle chargé:", model_name)
+print("✓ Ordre des labels:", labels)
 
-# 2. DÉFINIR LE SCHÉMA DES DONNÉES KAFKA
-print("\n[2/5] Configuration du schéma Kafka...")
-
-# Schéma pour le topic 'tweets-validated' (provenant de votre API YouTube)
+# =========================
+# 2. Schema Kafka
+# =========================
 schema = StructType([
-    StructField("id", StringType(), True),
     StructField("text", StringType(), True),
+    StructField("user", StringType(), True),
     StructField("timestamp", StringType(), True),
-    StructField("source", StringType(), True)
+    StructField("location", StringType(), True)
 ])
 
-print("✓ Schéma configuré pour le topic 'tweets-validated'")
-
-# 3. LIRE LE STREAM DEPUIS KAFKA
-print("\n[3/5] Connexion au stream Kafka...")
-kafka_df = spark \
-    .readStream \
+# =========================
+# 3. Lire depuis Kafka
+# =========================
+kafka_df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
     .option("subscribe", "tweets-validated") \
-    .option("startingOffsets", "latest") \
-    .option("failOnDataLoss", "false") \
+    .option("startingOffsets", "earliest") \
     .load()
 
-print("✓ Connecté au topic 'tweets-validated'")
-
-# 4. PARSER ET PRÉPARER LES DONNÉES
-print("\n[4/5] Préparation des données pour prédiction...")
-
-# Parser les données JSON
 parsed_df = kafka_df.select(
     from_json(col("value").cast("string"), schema).alias("data")
 ).select("data.*")
 
-# Nettoyer le texte exactement comme lors de l'entraînement
+# =========================
+# 4. Nettoyage
+# =========================
 df_clean = parsed_df.withColumn(
     "comment_clean",
     regexp_replace(lower(col("text")), "[^a-zA-Z\\s]", "")
-).filter(col("comment_clean") != "")
+)
 
-# 5. PRÉDICTION EN TEMPS RÉEL
-print("\n[5/5] Application du modèle ML...")
-
-# Appliquer le modèle
+# =========================
+# 5. Prédiction
+# =========================
 predictions_df = model.transform(df_clean)
 
-# Convertir la prédiction numérique en label lisible
-# Note: Les labels peuvent varier selon votre StringIndexer
-# Vérifiez l'ordre: neutral=0, negative=1, positive=2 (ou autre)
+# Construire l'expression SQL pour mapper prediction -> label
+labels_sql = ",".join([f"'{l}'" for l in labels])
+
 final_df = predictions_df.select(
-    col("id"),
     col("text"),
-    col("timestamp").cast(TimestampType()),
-    col("source"),
-    when(col("prediction") == 0.0, "neutral")
-    .when(col("prediction") == 1.0, "negative")
-    .when(col("prediction") == 2.0, "positive")
-    .otherwise("unknown")
-    .alias("sentiment"),
-    col("probability"),
+    col("user"),
+    col("timestamp"),
+    col("location").alias("source"),
+    expr(f"array({labels_sql})[int(prediction)]").alias("sentiment"),
     current_timestamp().alias("predicted_at")
 )
 
-print("✓ Pipeline de prédiction configuré")
-
-# 6. ÉCRIRE DANS ELASTICSEARCH
-print("\n📊 Configuration de la sortie vers Elasticsearch...")
-
+# =========================
+# 6. Elasticsearch
+# =========================
 def write_to_elasticsearch(batch_df, batch_id):
-    """Écrire un batch dans Elasticsearch"""
-    try:
-        if batch_df.count() > 0:
-            # Préparer les données pour ES
-            es_df = batch_df.select(
-                col("id"),
-                col("text"),
-                col("sentiment"),
-                col("timestamp"),
-                col("source"),
-                col("predicted_at")
-            )
-            
-            # Écrire dans Elasticsearch
-            es_df.write \
+    if batch_df.count() > 0:
+        try:
+            batch_df.write \
                 .format("org.elasticsearch.spark.sql") \
-                .option("es.resource", "sentiment-predictions/_doc") \
-                .option("es.mapping.id", "id") \
-                .option("es.write.operation", "upsert") \
+                .option("es.resource", "sentiment-predictions") \
+                .option("es.write.operation", "index") \
+                .option("es.mapping.id", "timestamp") \
                 .mode("append") \
                 .save()
-            
-            print(f"✓ Batch {batch_id}: {batch_df.count()} prédictions envoyées à Elasticsearch")
-    except Exception as e:
-        print(f"❌ Erreur batch {batch_id}: {str(e)}")
+            print(f"✓ Batch {batch_id} : {batch_df.count()} documents envoyés à Elasticsearch")
+        except Exception as e:
+            print(f"❌ Erreur Batch {batch_id}: {e}")
+    else:
+        print(f"⚠ Batch {batch_id} vide, rien à envoyer")
 
-query_elasticsearch = final_df \
-    .writeStream \
+query_es = final_df.writeStream \
     .foreachBatch(write_to_elasticsearch) \
     .option("checkpointLocation", "/tmp/checkpoint-es") \
     .start()
 
-print("✓ Stream vers Elasticsearch 'sentiment-predictions' démarré")
-
-# 7. ÉCRIRE DANS KAFKA (topic de sortie)
-print("\n📤 Configuration de la sortie vers Kafka...")
-
-kafka_output = final_df.select(
-    col("id").alias("key"),
-    to_json(struct(
-        col("id"),
-        col("text"),
-        col("sentiment"),
-        col("timestamp"),
-        col("source"),
-        col("predicted_at")
-    )).alias("value")
-)
-
-query_kafka = kafka_output \
-    .writeStream \
+# =========================
+# 7. Kafka output
+# =========================
+query_kafka = final_df.selectExpr(
+    "to_json(struct(*)) AS value"
+).writeStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
     .option("topic", "sentiment-results") \
     .option("checkpointLocation", "/tmp/checkpoint-kafka") \
     .start()
 
-print("✓ Stream vers Kafka 'sentiment-results' démarré")
-
-# 8. AFFICHER DANS LA CONSOLE (pour monitoring)
-print("\n🖥️  Configuration de l'affichage console...")
-
-console_query = final_df.select(
-    "id", 
-    "text", 
-    "sentiment",
-    "source",
-    "predicted_at"
-) \
-    .writeStream \
+# =========================
+# 8. Console
+# =========================
+console_query = final_df.writeStream \
+    .format("console") \
     .outputMode("append") \
-    .format("console") \
-    .option("truncate", "false") \
-    .option("numRows", "3") \
-    .start()
-
-print("✓ Affichage console activé")
-
-# 9. STATISTIQUES EN TEMPS RÉEL
-print("\n📈 Configuration des statistiques...")
-
-from pyspark.sql.functions import window, count
-
-stats_df = final_df \
-    .withWatermark("predicted_at", "2 minutes") \
-    .groupBy(
-        window("predicted_at", "1 minute"),
-        "sentiment"
-    ) \
-    .agg(count("*").alias("count")) \
-    .select(
-        col("window.start").alias("window_start"),
-        col("window.end").alias("window_end"),
-        col("sentiment"),
-        col("count")
-    )
-
-query_stats = stats_df \
-    .writeStream \
-    .outputMode("update") \
-    .format("console") \
     .option("truncate", "false") \
     .start()
 
-print("✓ Statistiques en temps réel activées")
+# =========================
+# 9. Await
+# =========================
+print("\n" + "=" * 70)
+print("✓ STREAMING DÉMARRÉ - En attente de messages Kafka...")
+print("=" * 70 + "\n")
 
-# 10. INFORMATIONS FINALES
-print("\n" + "="*70)
-print("🚀 PIPELINE STREAMING ACTIF")
-print("="*70)
-print("\n📊 Architecture du flux:")
-print("  API YouTube → NiFi")
-print("       ↓")
-print("  Kafka Topic: tweets-validated")
-print("       ↓")
-print("  Spark Streaming + ML Model")
-print("       ↓")
-print("  ├→ Elasticsearch: sentiment-predictions")
-print("  └→ Kafka Topic: sentiment-results")
-print("\n")
-print("ℹ️  Informations:")
-print(f"  • Modèle utilisé: {model_name}")
-print("  • Topic input: tweets-validated")
-print("  • Topic output: sentiment-results")
-print("  • Index Elasticsearch: sentiment-predictions")
-print("\n")
-print("📍 Services:")
-print("  • Elasticsearch: http://localhost:9200")
-print("  • Kibana: http://localhost:5601")
-print("  • Spark UI: http://localhost:4040")
-print("\n")
-print("⏹️  Appuyez sur Ctrl+C pour arrêter")
-print("="*70)
-
-# Attendre la fin du streaming
 try:
     spark.streams.awaitAnyTermination()
 except KeyboardInterrupt:
-    print("\n\n⏹️  Arrêt du streaming...")
-    query_elasticsearch.stop()
+    print("\n⚠ Arrêt du streaming...")
+    query_es.stop()
     query_kafka.stop()
-    query_console.stop()
-    query_stats.stop()
-    print("✓ Tous les streams arrêtés")
+    console_query.stop()
     spark.stop()
-    print("✓ Session Spark fermée")
+    print("✓ Streaming arrêté proprement")

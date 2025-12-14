@@ -165,8 +165,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "\n${BLUE}Lancement du Spark Streaming...${NC}"
     
     # Option 1: Lancer en mode interactif (voir les logs)
+    # docker exec -it spark-master spark-submit \
+    #   --master local[*] \
+    #   --driver-memory 4g \
+    #   --executor-memory 4g \
+    #   --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.elasticsearch:elasticsearch-spark-30_2.12:8.11.0 \
+    #   /opt/spark-apps/streaming.py
     docker exec -it spark-master spark-submit \
-      --master local[*] \
+      --master spark://spark-master:7077 \
+      --deploy-mode client \
       --driver-memory 4g \
       --executor-memory 4g \
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.elasticsearch:elasticsearch-spark-30_2.12:8.11.0 \

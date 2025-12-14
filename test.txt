@@ -1,0 +1,20 @@
+# Voir logs Spark
+docker logs -f spark-master
+
+# Lire messages Kafka input
+docker exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic tweets-validated
+
+# Lire prédictions Kafka output
+docker exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic sentiment-results
+
+# Compter documents ES
+curl http://localhost:9200/sentiment-predictions/_count?pretty
+
+# Voir dernières prédictions
+curl "http://localhost:9200/sentiment-predictions/_search?pretty&size=5&sort=predicted_at:desc"
+
+# Interface Spark
+http://localhost:4040
+
+# Kibana
+http://localhost:5601
