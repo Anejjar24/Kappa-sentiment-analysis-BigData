@@ -102,13 +102,14 @@ fi
 echo -e "\n${BLUE}[5/6] Copie des fichiers vers Spark...${NC}"
 
 # Copier le script de streaming
-if [ -f "app/streaming.py" ]; then
-    docker cp app/streaming.py spark-master:/opt/spark-apps/
+if [ -f "spark/app/streaming.py" ]; then
+    docker cp spark/app/streaming.py spark-master:/opt/spark-apps/
     echo -e "${GREEN}✓ streaming.py copié${NC}"
 else
-    echo -e "${RED}❌ app/streaming.py non trouvé!${NC}"
+    echo -e "${RED}❌ spark/app/streaming.py non trouvé!${NC}"
     exit 1
 fi
+
 
 # Copier les modèles
 echo -e "${BLUE}Copie des modèles ML...${NC}"

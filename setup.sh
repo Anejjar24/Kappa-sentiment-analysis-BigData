@@ -23,7 +23,14 @@ docker exec kafka kafka-topics --create \
   --bootstrap-server localhost:9092 \
   --partitions 3 \
   --replication-factor 1
+# 3. Créer le topic Kafka pour les résultats
+sleep 30  # Attendre que Kafka soit prêt
 
+docker exec kafka kafka-topics --create \
+  --topic sentiment-results \
+  --bootstrap-server localhost:9092 \
+  --partitions 3 \
+  --replication-factor 1 2>/dev/null || echo "Topic déjà créé"
 # Lister les topics
 echo "Topics Kafka créés:"
 docker exec kafka kafka-topics --list --bootstrap-server localhost:9092

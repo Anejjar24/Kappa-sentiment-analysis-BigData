@@ -1,0 +1,6 @@
+{
+  "accuracy": 0.6965077605321508,
+  "f1_score": 0.6462711165183677,
+  "vocab_size": 10000,
+  "model_type": "LogisticRegression"
+}
