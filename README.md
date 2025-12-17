@@ -6,8 +6,7 @@
 [![Spark](https://img.shields.io/badge/Apache%20Spark-3.5.0-orange.svg)](https://spark.apache.org/)
 
 > A complete Big Data pipeline implementing the Kappa Architecture for real-time sentiment analysis of streaming chat data from platforms like Twitch and YouTube.
-
-![Architecture Overview](assets/GlobalArchi.png)
+![Image](https://github.com/user-attachments/assets/acd3fe2a-46de-46a3-b284-0fff1e5c68f0)
 
 ## 📋 Table of Contents
 
@@ -48,43 +47,7 @@ The Kappa Architecture simplifies the Lambda Architecture by using a single stre
 
 ### System Components
 
-```
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   YouTube   │      │   Twitch    │      │   Other     │      │             │
-│  Producer   │─────▶│  Producer   │─────▶│  Sources    │─────▶│   Kafka     │
-└─────────────┘      └─────────────┘      └─────────────┘      │ raw-tweets  │
-                                                                 └──────┬──────┘
-                                                                        │
-                                                                        ▼
-                                                                 ┌─────────────┐
-                                                                 │    NiFi     │
-                                                                 │ (Validation)│
-                                                                 └──────┬──────┘
-                                                                        │
-                                                                        ▼
-                                                                 ┌─────────────┐
-                                                                 │   Kafka     │
-                                                                 │  validated  │
-                                                                 └──────┬──────┘
-                                                                        │
-                                                                        ▼
-                                                                 ┌─────────────┐
-                                                                 │    Spark    │
-                                                                 │  Streaming  │
-                                                                 │  + ML Model │
-                                                                 └──────┬──────┘
-                                                                        │
-                                                                        ▼
-                                                                 ┌─────────────┐
-                                                                 │Elasticsearch│
-                                                                 └──────┬──────┘
-                                                                        │
-                                                                        ▼
-                                                                 ┌─────────────┐
-                                                                 │   Kibana    │
-                                                                 │(Dashboards) │
-                                                                 └─────────────┘
-```
+![Image](https://github.com/user-attachments/assets/acd3fe2a-46de-46a3-b284-0fff1e5c68f0)
 
 ### Technology Stack
 
@@ -147,7 +110,7 @@ Before starting, ensure you have:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/kappa-sentiment-analysis.git
+git clone https://github.com/Anejjar24/kappa-sentiment-analysis-BigData.git
 cd kappa-sentiment-analysis
 ```
 
@@ -260,14 +223,14 @@ kappa-sentiment-analysis/
 ├── models/                                 # Trained ML models (auto-generated)
 ├── nifi/
 │   └── templates/
-│       └── nifi_flow.xml                   # NiFi validation flow
+│       └── fin.xml                   # NiFi validation flow
 ├── spark/
 │   ├── Dockerfile                          # Custom Spark image
 │   └── app/
 │       ├── train_sentiment_model.py        # Model training (Spark ML)
 │       ├── streaming.py                    # Streaming with Naive Bayes
-│       ├── sentiment_analysis_hf.py        # Streaming with Hugging Face
-│       └── multi.py                        # Multi-model comparison
+│       ├── spark_streaming_with_model_roberta_hg.py        # Streaming with Hugging Face
+│       └── multi.py                        # Multi models training (Spark ML)
 ├── docker-compose.yml                      # Infrastructure definition
 ├── real_youtube_producer.py                # YouTube data producer
 ├── twitch_chat_producer.py                 # Twitch data producer
@@ -409,7 +372,7 @@ open http://localhost:8081
 - Save as "Real-Time Sentiment Analysis"
 
 ## 🤖 Machine Learning Models
-
+<img width="1930" height="1107" alt="Image" src="https://github.com/user-attachments/assets/9cd939d1-dfae-4f6e-b948-4f68670d3eb2" />
 ### Approach Comparison
 
 | Aspect | Spark ML (Naive Bayes) | Hugging Face (RoBERTa) |
@@ -443,6 +406,7 @@ The training script evaluates multiple algorithms:
    - Training time: 41.85s
 
 ### Hugging Face Model
+<img width="6080" height="2992" alt="Image" src="https://github.com/user-attachments/assets/532968b1-ee72-4494-86ea-2b04c53a35e1" />
 
 **Model**: `j-hartmann/sentiment-roberta-large-english-3-classes`
 
@@ -670,39 +634,6 @@ elasticsearch-2:
     - discovery.seed_hosts=elasticsearch
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-### Reporting Bugs
-
-Please open an issue with:
-- Description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- System information (OS, Docker version, etc.)
-
-### Suggesting Features
-
-Open an issue with:
-- Clear description of the feature
-- Use case and benefits
-- Possible implementation approach
-
-### Submitting Pull Requests
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow PEP 8 for Python code
-- Add comments for complex logic
-- Update documentation for new features
-- Test changes in a clean Docker environment
 
 ## 📄 License
 
@@ -728,28 +659,17 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 ```
 
-## 👥 Authors
 
-**Zineb EL HALLA**
-- GitHub: [@zineb-elhalla](https://github.com/zineb-elhalla)
-- Email: zineb.elhalla@example.com
 
-**Ihssane ANEJJAR**
-- GitHub: [@ihssane-anejjar](https://github.com/ihssane-anejjar)
-- Email: ihssane.anejjar@example.com
+
 
 ### Supervision
 
 **Pr. LAZAR Hajar**
 - Module: Big Data Architecture and Infrastructure
-- Institution: 2ITE3
+- Institution: 2ITE3.ENSAJ
 
-## 🙏 Acknowledgments
 
-- Apache Software Foundation for Kafka, Spark, and NiFi
-- Elastic for Elasticsearch and Kibana
-- Hugging Face for the Transformers library
-- The open-source community
 
 ## 📚 References
 
@@ -760,16 +680,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 - [Elasticsearch Guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
 - [Hugging Face Transformers](https://huggingface.co/docs/transformers/index)
 
-### Papers & Articles
-- Kappa Architecture (Jay Kreps) - [Link](http://milinda.pathirage.org/kappa-architecture.com/)
-- RoBERTa: A Robustly Optimized BERT Pretraining Approach - [arXiv](https://arxiv.org/abs/1907.11692)
 
-## 📞 Support
-
-For questions or support:
-- Open an issue on GitHub
-- Email: support@example.com
-- Documentation: [Wiki](https://github.com/your-username/kappa-sentiment-analysis/wiki)
 
 ---
 
