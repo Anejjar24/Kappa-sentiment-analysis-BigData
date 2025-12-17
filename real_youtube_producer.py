@@ -10,7 +10,7 @@ from datetime import datetime
 import time
 
 # Configuration YouTube API v3
-YOUTUBE_API_KEY = "AIzaSyB_OtsBy5otMdbKhN7WmbkstKBV4t68i-A"  # À remplacer par votre clé API
+YOUTUBE_API_KEY = "AIzaSyDm6RDg8y2VWlHnsYlPRyjm6q7ql-kH8ew"  # À remplacer par votre clé API
 
 # Configuration Kafka
 producer = KafkaProducer(
